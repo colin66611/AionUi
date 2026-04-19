@@ -18,5 +18,14 @@
   "config": {
     "reasoning_effort": "推理深度",
     "default": "默认"
+  },
+  "elicitation": {
+    "title": "智能体提问",
+    "submit": "提交",
+    "cancel": "取消",
+    "enterValue": "请输入值...",
+    "submitted": "回复已提交",
+    "openUrl": "在浏览器中打开",
+    "openedInBrowser": "已在浏览器中打开"
   }
 }

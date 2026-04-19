@@ -62,6 +62,18 @@ export const conversation = {
     { conversation_id: string; question: string }
   >('conversation.ask-side-question'),
   confirmMessage: bridge.buildProvider<IBridgeResponse, IConfirmMessageParams>('conversation.confirm.message'), // 通用确认消息
+  confirmElicitation: bridge.buildProvider<
+    IBridgeResponse,
+    {
+      action: 'accept' | 'decline';
+      content?: Record<string, unknown>;
+      reason?: string;
+      msg_id: string;
+      conversation_id: string;
+      callId: string;
+    }
+  >('conversation.confirm.elicitation'), // Elicitation confirmation
+  openExternalUrl: bridge.buildProvider<void, { url: string }>('shell.open-external-url'), // Open URL in external browser
   responseStream: bridge.buildEmitter<IResponseMessage>('chat.response.stream'), // 接收消息（统一接口）
   turnCompleted: bridge.buildEmitter<IConversationTurnCompletedEvent>('conversation.turn.completed'),
   listChanged: bridge.buildEmitter<IConversationListChangedEvent>('conversation.list-changed'),

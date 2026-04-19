@@ -78,6 +78,7 @@ type TMessageType =
   | 'tool_group'
   | 'agent_status'
   | 'acp_permission'
+  | 'acp_elicitation'
   | 'acp_tool_call'
   | 'codex_permission'
   | 'codex_tool_call'
@@ -230,6 +231,18 @@ export type IMessageAgentStatus = IMessage<
 
 export type IMessageAcpPermission = IMessage<'acp_permission', AcpPermissionRequest>;
 
+export type IMessageAcpElicitation = IMessage<
+  'acp_elicitation',
+  {
+    callId: string;
+    mode: 'form' | 'url';
+    message: string;
+    requestedSchema?: Record<string, unknown>;
+    url?: string;
+    meta?: Record<string, unknown>;
+  }
+>;
+
 export type IMessageAcpToolCall = IMessage<'acp_tool_call', ToolCallUpdate>;
 
 export type IMessageCodexPermission = IMessage<'codex_permission', CodexPermissionRequest>;
@@ -366,6 +379,7 @@ export type TMessage =
   | IMessageToolGroup
   | IMessageAgentStatus
   | IMessageAcpPermission
+  | IMessageAcpElicitation
   | IMessageAcpToolCall
   | IMessageCodexPermission
   | IMessageCodexToolCall

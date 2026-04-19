@@ -18,5 +18,14 @@
   "config": {
     "reasoning_effort": "Зусилля міркування",
     "default": "За замовчуванням"
+  },
+  "elicitation": {
+    "title": "Agent Question",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "enterValue": "Enter value...",
+    "submitted": "Response submitted successfully",
+    "openUrl": "Open in Browser",
+    "openedInBrowser": "Opened in browser"
   }
 }
