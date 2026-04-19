@@ -7,6 +7,8 @@
 import type {
   AcpAgentCapabilities,
   AcpBackend,
+  AcpElicitationRequest,
+  AcpElicitationResponse,
   AcpIncomingMessage,
   AcpInitializeResult,
   AcpMessage,
@@ -19,6 +21,7 @@ import type {
   AcpSessionModes,
   AcpSessionModels,
   AcpSessionUpdate,
+  ElicitationUIData,
 } from '@/common/types/acpTypes';
 import { ACP_METHODS, JSONRPC_VERSION, parseInitializeResult } from '@/common/types/acpTypes';
 import type { ChildProcess } from 'child_process';
@@ -27,6 +30,7 @@ import path from 'path';
 import { connectClaude, connectCodebuddy, connectCodex, spawnGenericBackend } from './acpConnectors';
 import type { SpawnResult } from './acpConnectors';
 import { killChild, readTextFile, writeJsonRpcMessage, writeTextFile } from './utils';
+import { ElicitationResolver } from '@process/acp/session/ElicitationResolver';
 
 // Re-export for unit tests that import from this module
 export { createGenericSpawnConfig } from './acpConnectors';
@@ -121,6 +125,12 @@ export class AcpConnection {
   public onPromptUsage: (usage: AcpPromptResponseUsage) => void = () => {}; // Handler for PromptResponse.usage (per-turn token data)
   public onFileOperation: (operation: { method: string; path: string; content?: string; sessionId: string }) => void =
     () => {};
+
+  // Elicitation support
+  private elicitationResolver = new ElicitationResolver({});
+
+  public onElicitationRequest: (data: AcpElicitationRequest) => Promise<AcpElicitationResponse> = () =>
+    Promise.resolve({ action: 'decline', reason: 'Elicitation not supported' });
 
   /**
    * Set the prompt timeout duration in seconds.
@@ -658,6 +668,9 @@ export class AcpConnection {
         case ACP_METHODS.REQUEST_PERMISSION:
           result = await this.handlePermissionRequest(message.params);
           break;
+        case ACP_METHODS.ELICITATION_CREATE:
+          result = await this.handleElicitationCreate(message.params);
+          break;
         case ACP_METHODS.READ_TEXT_FILE:
           result = await this.handleReadOperation(message.params);
           break;
@@ -721,6 +734,43 @@ export class AcpConnection {
     }
   }
 
+  private async handleElicitationCreate(params: AcpElicitationRequest): Promise<{
+    outcome: { outcome: string; content?: Record<string, unknown>; reason?: string };
+  }> {
+    // Pause all session/prompt request timeouts
+    this.pauseSessionPromptTimeouts();
+    try {
+      const response = await this.onElicitationRequest(params);
+
+      if (response.action === 'accept') {
+        return {
+          outcome: {
+            outcome: 'accepted',
+            content: response.content,
+          },
+        };
+      } else {
+        return {
+          outcome: {
+            outcome: 'declined',
+            ...(response.reason && { reason: response.reason }),
+          },
+        };
+      }
+    } catch (error) {
+      console.error('Elicitation request failed:', error);
+      return {
+        outcome: {
+          outcome: 'declined',
+          reason: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
+    } finally {
+      // Resume session/prompt timeouts regardless of success or failure
+      this.resumeSessionPromptTimeouts();
+    }
+  }
+
   private resolveWorkspacePath(targetPath: string): string {
     // Absolute paths are used as-is; relative paths are anchored to the conversation workspace
     // 绝对路径保持不变， 相对路径锚定到当前会话的工作区
@@ -738,6 +788,10 @@ export class AcpConnection {
         fs: {
           readTextFile: true,
           writeTextFile: true,
+        },
+        elicitation: {
+          supported: true,
+          modes: ['form', 'url'],
         },
       },
     };

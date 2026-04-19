@@ -1135,6 +1135,8 @@ export interface AcpFileReadRequest extends AcpRequest {
 export const ACP_METHODS = {
   SESSION_UPDATE: 'session/update',
   REQUEST_PERMISSION: 'session/request_permission',
+  ELICITATION_CREATE: 'elicitation/create',
+  ELICITATION_COMPLETE: 'elicitation/complete',
   READ_TEXT_FILE: 'fs/read_text_file',
   WRITE_TEXT_FILE: 'fs/write_text_file',
   SET_CONFIG_OPTION: 'session/set_config_option',
@@ -1185,6 +1187,104 @@ export interface AcpFileWriteMessage {
 }
 
 /**
+ * Elicitation 请求参数 - Form 模式
+ * Elicitation request parameters - Form mode
+ */
+export interface AcpElicitationFormModeRequest {
+  /** 会话 ID */
+  sessionId: string;
+  /** 模式: form */
+  mode: 'form';
+  /** 显示给用户的消息 */
+  message: string;
+  /** JSON Schema 定义用户输入 */
+  requestedSchema: Record<string, unknown>;
+  /** 可选的元数据 */
+  meta?: Record<string, unknown>;
+}
+
+/**
+ * Elicitation 请求参数 - URL 模式
+ * Elicitation request parameters - URL mode
+ */
+export interface AcpElicitationUrlModeRequest {
+  /** 会话 ID */
+  sessionId: string;
+  /** 模式: url */
+  mode: 'url';
+  /** 要打开的 URL */
+  url: string;
+  /** 显示给用户的消息 */
+  message?: string;
+  /** 可选的元数据 */
+  meta?: Record<string, unknown>;
+}
+
+/**
+ * Elicitation 请求联合类型
+ * Elicitation request union type
+ */
+export type AcpElicitationRequest = AcpElicitationFormModeRequest | AcpElicitationUrlModeRequest;
+
+/**
+ * Elicitation 响应 - 用户接受
+ * Elicitation response - user accepted
+ */
+export interface AcpElicitationAcceptResponse {
+  /** 动作: accept */
+  action: 'accept';
+  /** 用户输入内容 */
+  content: Record<string, unknown>;
+}
+
+/**
+ * Elicitation 响应 - 用户拒绝
+ * Elicitation response - user declined
+ */
+export interface AcpElicitationDeclineResponse {
+  /** 动作: decline */
+  action: 'decline';
+  /** 可选的拒绝原因 */
+  reason?: string;
+}
+
+/**
+ * Elicitation 响应联合类型
+ * Elicitation response union type
+ */
+export type AcpElicitationResponse = AcpElicitationAcceptResponse | AcpElicitationDeclineResponse;
+
+/**
+ * Elicitation 请求消息（带类型化 params）
+ * Elicitation request message (with typed params)
+ */
+export interface AcpElicitationRequestMessage {
+  jsonrpc: typeof JSONRPC_VERSION;
+  id: number;
+  method: typeof ACP_METHODS.ELICITATION_CREATE;
+  params: AcpElicitationRequest;
+}
+
+/**
+ * Elicitation UI 数据
+ * 用于渲染表单的数据
+ */
+export interface ElicitationUIData {
+  /** 请求 ID */
+  callId: string;
+  /** 显示的消息 */
+  message: string;
+  /** 模式: form | url */
+  mode: 'form' | 'url';
+  /** Form 模式的 JSON Schema */
+  requestedSchema?: Record<string, unknown>;
+  /** URL 模式的 URL */
+  url?: string;
+  /** 元数据 */
+  meta?: Record<string, unknown>;
+}
+
+/**
  * ACP 入站消息联合类型
  * TypeScript 可根据 method 字段自动窄化类型
  *
@@ -1194,5 +1294,6 @@ export interface AcpFileWriteMessage {
 export type AcpIncomingMessage =
   | AcpSessionUpdateNotification
   | AcpPermissionRequestMessage
+  | AcpElicitationRequestMessage
   | AcpFileReadMessage
   | AcpFileWriteMessage;
